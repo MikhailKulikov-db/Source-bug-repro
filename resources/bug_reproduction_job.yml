@@ -1,0 +1,63 @@
+resources:
+  jobs:
+    Git_PDM_All:
+      name: Git_PDM_All
+      tasks:
+        - task_key: PDM_Deploy
+          spark_python_task:
+            python_file: test.py
+            parameters:
+              - pdm/config/deploy_pdm_files.yaml
+              - /Workspace/Shared/Deployment/pdm/ETL_PDM
+            source: GIT
+          environment_key: Default
+        - task_key: ETL_PDM_Coalesce_Source
+          depends_on:
+            - task_key: PDM_Deploy
+          spark_python_task:
+            python_file: /Workspace/Users/mikhail.kulikov@databricks.com/source.py
+            parameters:
+              - config_pdm_source_coalesce.yaml
+              - datasource
+              - pdm_source_coalesce.PdmSourceCSUPersonCoalesce
+          environment_key: Default
+        - task_key: ETL_PDM_Egress
+          depends_on:
+            - task_key: ETL_PDM_Coalesce_Source
+          spark_python_task:
+            python_file: /Workspace/Users/mikhail.kulikov@databricks.com/source.py
+            parameters:
+              - config_pdm_egress.yaml
+              - pdm_source_to_pdm
+              - general_egress_snowflake.GeneralEgress
+              - pdm_csuperson
+          environment_key: Default
+        - task_key: PDM_ID_Mapping_Transform
+          depends_on:
+            - task_key: ETL_PDM_Coalesce_Source
+          spark_python_task:
+            python_file: /Workspace/Users/mikhail.kulikov@databricks.com/source.py
+            parameters:
+              - config_pdm_transform.yaml
+              - datasource
+              - pdm_campus.PDM_ID_Mapping
+          environment_key: Default
+        - task_key: PDM_ID_Mapping_Egress
+          depends_on:
+            - task_key: PDM_ID_Mapping_Transform
+          spark_python_task:
+            python_file: /Workspace/Users/mikhail.kulikov@databricks.com/source.py
+            parameters:
+              - config_pdm_egress.yaml
+              - pdm_source_to_pdmdfgdfgdf
+              - general_egress_snowflake.GeneralEgress
+              - pdm_id_mapping
+          environment_key: Default
+      git_source:
+          git_url: 'https://gist.github.com/MikhailKulikov-db/d5bb8247af08cea9f12bae32fca515b7'
+          git_provider: GitHub
+          git_branch: main
+      environments:
+        - environment_key: Default
+          spec:
+            client: "1"
